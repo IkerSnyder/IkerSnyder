@@ -1,4 +1,4 @@
-@import url("https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Mono:wght@300;400&display=swap");
+@import url("https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@400&family=Syne:wght@400;600;700;800&family=DM+Mono:wght@300;400&display=swap");
 
 @tailwind base;
 @tailwind components;
@@ -18,7 +18,8 @@
   --card-border: rgba(120, 143, 173, 0.18);
   --card-shadow: 0 30px 80px rgba(0, 0, 0, 0.28);
   --font-heading: "Syne", sans-serif;
-  --font-body: "DM Mono", monospace;
+  --font-body: "Instrument Sans", sans-serif;
+  --font-mono: "DM Mono", monospace;
 }
 
 *,
@@ -38,7 +39,7 @@ body {
     radial-gradient(circle at top, rgba(0, 229, 255, 0.08), transparent 26%),
     linear-gradient(180deg, #080c10 0%, #070b10 48%, #080c10 100%);
   color: var(--text);
-  font-family: var(--font-body), monospace;
+  font-family: var(--font-body), sans-serif;
   line-height: 1.5;
   overflow-x: hidden;
   text-rendering: optimizeLegibility;
@@ -129,6 +130,7 @@ section[id] {
   z-index: 9999;
   transition: transform 0.1s ease;
   mix-blend-mode: screen;
+  display: none;
 }
 
 .cursor-ring {
@@ -142,6 +144,34 @@ section[id] {
   pointer-events: none;
   z-index: 9998;
   transition: transform 0.15s ease;
+  display: none;
+}
+
+.nav-link,
+.nav-cta,
+.footer-link,
+.hero-tag,
+.hero-cta,
+.hero-secondary-link,
+.hero-capability-tag,
+.contact-secondary-link,
+.hero-panel-label,
+.hero-panel-chip,
+.hero-panel-index,
+.hero-panel-footer,
+.section-label,
+.canvas-label,
+.node-icon,
+.node-sub,
+.service-num,
+.tag,
+.about-fact-label,
+.contact-aside-label,
+.contact-focus-tag,
+.site-footer,
+.flow-stack-index,
+.flow-stack-subtitle {
+  font-family: var(--font-mono), monospace;
 }
 
 .site-nav {
@@ -339,7 +369,6 @@ section[id] {
   border: 1px solid var(--accent);
   color: var(--accent);
   padding: 0.9rem 2rem;
-  font-family: var(--font-body), monospace;
   font-size: 0.76rem;
   letter-spacing: 0.16em;
   text-transform: uppercase;
@@ -1014,17 +1043,6 @@ svg.flow-svg {
   50% {
     transform: translate(-50%, -50%) scale(1.08);
     opacity: 1;
-  }
-}
-
-@media (pointer: fine) {
-  body,
-  a,
-  button,
-  input,
-  textarea,
-  select {
-    cursor: none;
   }
 }
 

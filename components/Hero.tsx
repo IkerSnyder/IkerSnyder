@@ -5,13 +5,6 @@ const capabilityTags = [
   "n8n automation",
 ];
 
-const systemSteps = [
-  "Target and qualify the right accounts",
-  "Launch outreach sequences across LinkedIn and email",
-  "Route replies into a clean handoff process",
-  "Keep the system running without manual chasing",
-];
-
 export default function Hero() {
   return (
     <section id="home" className="hero" aria-label="Hero section">
@@ -50,30 +43,6 @@ export default function Hero() {
             ))}
           </div>
         </div>
-
-        <aside className="hero-panel" aria-label="System snapshot">
-          <div className="hero-panel-top">
-            <div>
-              <div className="hero-panel-label">System snapshot</div>
-              <div className="hero-panel-title">Outbound stack</div>
-            </div>
-            <div className="hero-panel-chip">LinkedIn + email</div>
-          </div>
-
-          <div className="hero-panel-list">
-            {systemSteps.map((step, index) => (
-              <div key={step} className="hero-panel-step">
-                <div className="hero-panel-index">{`0${index + 1}`}</div>
-                <p>{step}</p>
-              </div>
-            ))}
-          </div>
-
-          <div className="hero-panel-footer">
-            <span>Personalized messaging</span>
-            <span>Clean CRM handoff</span>
-          </div>
-        </aside>
       </div>
     </section>
   );

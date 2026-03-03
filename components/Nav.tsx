@@ -60,7 +60,6 @@ export default function Nav() {
       <nav className="site-nav" aria-label="Primary navigation">
         <a href="#home" className="nav-brand" aria-label="Go to top of page">
           <span className="nav-logo">IS</span>
-          <span className="nav-brand-copy">Automation systems</span>
         </a>
 
         <div className="nav-links">
