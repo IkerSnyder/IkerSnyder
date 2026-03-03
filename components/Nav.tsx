@@ -2,6 +2,12 @@
 
 import { useEffect, useRef } from "react";
 
+const navItems = [
+  { href: "#workflow", label: "Workflow" },
+  { href: "#services", label: "Services" },
+  { href: "#about", label: "About" },
+];
+
 export default function Nav() {
   const cursorRef = useRef<HTMLDivElement>(null);
   const ringRef = useRef<HTMLDivElement>(null);
@@ -52,9 +58,21 @@ export default function Nav() {
       <div ref={ringRef} className="cursor-ring" aria-hidden="true" />
 
       <nav className="site-nav" aria-label="Primary navigation">
-        <div className="nav-logo">IS</div>
-        <a href="#contact" className="nav-link">
-          Get in touch →
+        <a href="#home" className="nav-brand" aria-label="Go to top of page">
+          <span className="nav-logo">IS</span>
+          <span className="nav-brand-copy">Automation systems</span>
+        </a>
+
+        <div className="nav-links">
+          {navItems.map((item) => (
+            <a key={item.href} href={item.href} className="nav-link">
+              {item.label}
+            </a>
+          ))}
+        </div>
+
+        <a href="#contact" className="nav-cta">
+          Contact
         </a>
       </nav>
     </>

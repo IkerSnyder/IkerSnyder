@@ -33,7 +33,7 @@ type SequenceStep = {
 const flowNodes: FlowNode[] = [
   {
     id: "n1",
-    icon: "🎯",
+    icon: "/LI",
     title: "LinkedIn Profile",
     subtitle: "Target ICP found",
     style: { left: "4%", top: "50%", transform: "translateY(-50%)" },
@@ -41,7 +41,7 @@ const flowNodes: FlowNode[] = [
   },
   {
     id: "n2",
-    icon: "🔍",
+    icon: "/ENR",
     title: "Enrich Lead",
     subtitle: "Pull email + data",
     style: { left: "26%", top: "20%" },
@@ -52,7 +52,7 @@ const flowNodes: FlowNode[] = [
   },
   {
     id: "n3",
-    icon: "💬",
+    icon: "/DM",
     title: "LinkedIn DM",
     subtitle: "Personalised outreach",
     style: { left: "26%", top: "62%" },
@@ -63,7 +63,7 @@ const flowNodes: FlowNode[] = [
   },
   {
     id: "n4",
-    icon: "📧",
+    icon: "/SEQ",
     title: "Email Sequence",
     subtitle: "3-touch campaign",
     style: { left: "52%", top: "20%" },
@@ -74,7 +74,7 @@ const flowNodes: FlowNode[] = [
   },
   {
     id: "n5",
-    icon: "⚡",
+    icon: "/QL",
     title: "Reply Detected",
     subtitle: "Auto-qualify lead",
     style: { left: "52%", top: "62%" },
@@ -85,7 +85,7 @@ const flowNodes: FlowNode[] = [
   },
   {
     id: "n6",
-    icon: "✅",
+    icon: "/CRM",
     title: "CRM Updated",
     subtitle: "Ready to close",
     style: { left: "76%", top: "50%", transform: "translateY(-50%)" },
@@ -114,33 +114,29 @@ const sequence: SequenceStep[] = [
   },
 ];
 
-const initialNodeRefs: Record<NodeId, HTMLDivElement | null> = {
-  n1: null,
-  n2: null,
-  n3: null,
-  n4: null,
-  n5: null,
-  n6: null,
-};
-
-const initialDotRefs: Record<DotId, HTMLDivElement | null> = {
-  d1r: null,
-  d2l: null,
-  d2r: null,
-  d3l: null,
-  d3r: null,
-  d4l: null,
-  d4r: null,
-  d5l: null,
-  d5r: null,
-  d6l: null,
-};
-
 export default function FlowCanvas() {
   const canvasRef = useRef<HTMLDivElement>(null);
   const svgRef = useRef<SVGSVGElement>(null);
-  const nodeRefs = useRef<Record<NodeId, HTMLDivElement | null>>(initialNodeRefs);
-  const dotRefs = useRef<Record<DotId, HTMLDivElement | null>>(initialDotRefs);
+  const nodeRefs = useRef<Record<NodeId, HTMLDivElement | null>>({
+    n1: null,
+    n2: null,
+    n3: null,
+    n4: null,
+    n5: null,
+    n6: null,
+  });
+  const dotRefs = useRef<Record<DotId, HTMLDivElement | null>>({
+    d1r: null,
+    d2l: null,
+    d2r: null,
+    d3l: null,
+    d3r: null,
+    d4l: null,
+    d4r: null,
+    d5l: null,
+    d5r: null,
+    d6l: null,
+  });
   const pathRefs = useRef<Partial<Record<PathId, SVGPathElement>>>({});
   const gradientId = useId().replace(/:/g, "");
 
@@ -382,7 +378,11 @@ export default function FlowCanvas() {
   };
 
   return (
-    <section className="automation-section" aria-label="Automation workflow visualization">
+    <section
+      id="workflow"
+      className="automation-section"
+      aria-label="Automation workflow visualization"
+    >
       <div className="section-label">{"// How it works"}</div>
       <h2 className="section-title">
         Automation that
@@ -394,7 +394,7 @@ export default function FlowCanvas() {
         generation automation looks like under the hood.
       </p>
 
-      <div ref={canvasRef} className="flow-canvas">
+      <div ref={canvasRef} className="flow-canvas flow-canvas-desktop">
         <div className="canvas-label">live workflow preview</div>
         <svg ref={svgRef} className="flow-svg" aria-hidden="true" />
 
@@ -420,6 +420,22 @@ export default function FlowCanvas() {
                 className={`node-dot ${dot.side}`}
               />
             ))}
+          </div>
+        ))}
+      </div>
+
+      <div className="flow-stack-mobile" aria-label="Workflow steps">
+        {flowNodes.map((node, index) => (
+          <div key={node.id} className="flow-stack-step">
+            <div className="flow-stack-rail" aria-hidden="true" />
+            <article className="flow-stack-card">
+              <div className="flow-stack-card-top">
+                <span className="node-icon flow-stack-icon">{node.icon}</span>
+                <span className="flow-stack-index">{`0${index + 1}`}</span>
+              </div>
+              <div className="flow-stack-title">{node.title}</div>
+              <p className="flow-stack-subtitle">{node.subtitle}</p>
+            </article>
           </div>
         ))}
       </div>
