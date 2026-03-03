@@ -29,25 +29,47 @@ export default function Nav() {
     let ringX = mouseX;
     let ringY = mouseY;
     let frameId = 0;
+    let isVisible = false;
 
-    const handleMouseMove = (event: MouseEvent) => {
+    const showCursor = () => {
+      if (isVisible) {
+        return;
+      }
+
+      isVisible = true;
+      cursor.style.opacity = "1";
+      ring.style.opacity = "1";
+    };
+
+    const hideCursor = () => {
+      isVisible = false;
+      cursor.style.opacity = "0";
+      ring.style.opacity = "0";
+    };
+
+    const handlePointerMove = (event: PointerEvent) => {
       mouseX = event.clientX;
       mouseY = event.clientY;
+      cursor.style.transform = `translate3d(${mouseX - 4}px, ${mouseY - 4}px, 0)`;
+      showCursor();
     };
 
     const animateCursor = () => {
-      cursor.style.transform = `translate(${mouseX - 4}px, ${mouseY - 4}px)`;
-      ringX += (mouseX - ringX) * 0.12;
-      ringY += (mouseY - ringY) * 0.12;
-      ring.style.transform = `translate(${ringX - 16}px, ${ringY - 16}px)`;
+      ringX += (mouseX - ringX) * 0.22;
+      ringY += (mouseY - ringY) * 0.22;
+      ring.style.transform = `translate3d(${ringX - 16}px, ${ringY - 16}px, 0)`;
       frameId = window.requestAnimationFrame(animateCursor);
     };
 
-    document.addEventListener("mousemove", handleMouseMove);
+    document.addEventListener("pointermove", handlePointerMove, { passive: true });
+    document.addEventListener("pointerleave", hideCursor);
+    window.addEventListener("blur", hideCursor);
     frameId = window.requestAnimationFrame(animateCursor);
 
     return () => {
-      document.removeEventListener("mousemove", handleMouseMove);
+      document.removeEventListener("pointermove", handlePointerMove);
+      document.removeEventListener("pointerleave", hideCursor);
+      window.removeEventListener("blur", hideCursor);
       window.cancelAnimationFrame(frameId);
     };
   }, []);
