@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useId, useRef, type CSSProperties } from "react";
+import { useCallback, useEffect, useId, useRef, useState } from "react";
+import type { CSSProperties } from "react";
 
 type NodeId = "n1" | "n2" | "n3" | "n4" | "n5" | "n6";
 type DotId = "d1r" | "d2l" | "d2r" | "d3l" | "d3r" | "d4l" | "d4r" | "d5l" | "d5r" | "d6l";
@@ -28,6 +29,7 @@ type SequenceStep = {
   nodes: NodeId[];
   dots: Array<[DotId, DotClass]>;
   paths: PathId[];
+  label: string;
 };
 
 const flowNodes: FlowNode[] = [
@@ -103,11 +105,32 @@ const connections: Connection[] = [
 ];
 
 const sequence: SequenceStep[] = [
-  { nodes: ["n1"], dots: [["d1r", "lit"]], paths: [] },
-  { nodes: ["n2", "n3"], dots: [["d2l", "lit"], ["d3l", "lit"]], paths: ["p12", "p13"] },
-  { nodes: ["n4"], dots: [["d2r", "lit"], ["d4l", "lit"]], paths: ["p24"] },
-  { nodes: ["n5"], dots: [["d3r", "lit"], ["d5l", "lit"]], paths: ["p35"] },
   {
+    label: "ICP prospect identified on LinkedIn",
+    nodes: ["n1"],
+    dots: [["d1r", "lit"]],
+    paths: [],
+  },
+  {
+    label: "Lead enriched. Email and data pulled automatically",
+    nodes: ["n2", "n3"],
+    dots: [["d2l", "lit"], ["d3l", "lit"]],
+    paths: ["p12", "p13"],
+  },
+  {
+    label: "3-touch email sequence triggered",
+    nodes: ["n4"],
+    dots: [["d2r", "lit"], ["d4l", "lit"]],
+    paths: ["p24"],
+  },
+  {
+    label: "Reply detected. Lead auto-qualified",
+    nodes: ["n5"],
+    dots: [["d3r", "lit"], ["d5l", "lit"]],
+    paths: ["p35"],
+  },
+  {
+    label: "CRM updated. Pipeline-ready, handed off to close",
     nodes: ["n6"],
     dots: [["d4r", "lit"], ["d5r", "lit"], ["d6l", "lit2"]],
     paths: ["p46", "p56"],
@@ -118,264 +141,182 @@ export default function FlowCanvas() {
   const canvasRef = useRef<HTMLDivElement>(null);
   const svgRef = useRef<SVGSVGElement>(null);
   const nodeRefs = useRef<Record<NodeId, HTMLDivElement | null>>({
-    n1: null,
-    n2: null,
-    n3: null,
-    n4: null,
-    n5: null,
-    n6: null,
+    n1: null, n2: null, n3: null, n4: null, n5: null, n6: null,
   });
   const dotRefs = useRef<Record<DotId, HTMLDivElement | null>>({
-    d1r: null,
-    d2l: null,
-    d2r: null,
-    d3l: null,
-    d3r: null,
-    d4l: null,
-    d4r: null,
-    d5l: null,
-    d5r: null,
-    d6l: null,
+    d1r: null, d2l: null, d2r: null, d3l: null,
+    d3r: null, d4l: null, d4r: null, d5l: null, d5r: null, d6l: null,
   });
   const pathRefs = useRef<Partial<Record<PathId, SVGPathElement>>>({});
   const gradientId = useId().replace(/:/g, "");
 
-  useEffect(() => {
+  const [currentStep, setCurrentStep] = useState(-1);
+  const [pathsReady, setPathsReady] = useState(false);
+  const autoRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const getDotPoint = (element: HTMLDivElement, side: "left" | "right") => {
+    const canvas = canvasRef.current!;
+    const canvasRect = canvas.getBoundingClientRect();
+    const elementRect = element.getBoundingClientRect();
+    return {
+      x: side === "right" ? elementRect.right - canvasRect.left : elementRect.left - canvasRect.left,
+      y: elementRect.top - canvasRect.top + elementRect.height / 2,
+    };
+  };
+
+  const makePath = (x1: number, y1: number, x2: number, y2: number) => {
+    const curvePull = (x2 - x1) * 0.5;
+    return `M ${x1} ${y1} C ${x1 + curvePull} ${y1}, ${x2 - curvePull} ${y2}, ${x2} ${y2}`;
+  };
+
+  const drawPaths = useCallback(() => {
     const canvas = canvasRef.current;
     const svg = svgRef.current;
+    if (!canvas || !svg) return;
 
-    if (!canvas || !svg) {
-      return;
-    }
+    svg.replaceChildren();
+    svg.setAttribute("viewBox", `0 0 ${canvas.clientWidth} ${canvas.clientHeight}`);
+    pathRefs.current = {};
 
-    const prefersReducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-    const timeoutIds: number[] = [];
-    let step = 0;
+    const defs = document.createElementNS("http://www.w3.org/2000/svg", "defs");
+    const gradient = document.createElementNS("http://www.w3.org/2000/svg", "linearGradient");
+    gradient.setAttribute("id", gradientId);
+    gradient.setAttribute("gradientUnits", "userSpaceOnUse");
 
-    const schedule = (callback: () => void, delay: number) => {
-      const timeoutId = window.setTimeout(callback, delay);
-      timeoutIds.push(timeoutId);
-    };
+    const stop1 = document.createElementNS("http://www.w3.org/2000/svg", "stop");
+    stop1.setAttribute("offset", "0%");
+    stop1.setAttribute("stop-color", "#7C3AED");
 
-    const clearTimers = () => {
-      timeoutIds.forEach((timeoutId) => window.clearTimeout(timeoutId));
-      timeoutIds.length = 0;
-    };
+    const stop2 = document.createElementNS("http://www.w3.org/2000/svg", "stop");
+    stop2.setAttribute("offset", "100%");
+    stop2.setAttribute("stop-color", "#A855F7");
 
-    const getDotPoint = (element: HTMLDivElement, side: "left" | "right") => {
-      const canvasRect = canvas.getBoundingClientRect();
-      const elementRect = element.getBoundingClientRect();
+    gradient.append(stop1, stop2);
+    defs.appendChild(gradient);
+    svg.appendChild(defs);
 
-      return {
-        x: side === "right" ? elementRect.right - canvasRect.left : elementRect.left - canvasRect.left,
-        y: elementRect.top - canvasRect.top + elementRect.height / 2,
-      };
-    };
+    connections.forEach((conn) => {
+      const fromEl = nodeRefs.current[conn.from];
+      const toEl = nodeRefs.current[conn.to];
+      if (!fromEl || !toEl) return;
 
-    const makePath = (x1: number, y1: number, x2: number, y2: number) => {
-      const curvePull = (x2 - x1) * 0.5;
-      return `M ${x1} ${y1} C ${x1 + curvePull} ${y1}, ${x2 - curvePull} ${y2}, ${x2} ${y2}`;
-    };
+      const from = getDotPoint(fromEl, conn.fromDot);
+      const to = getDotPoint(toEl, conn.toDot);
+      const d = makePath(from.x, from.y, to.x, to.y);
 
-    const drawPaths = () => {
-      svg.replaceChildren();
-      svg.setAttribute("viewBox", `0 0 ${canvas.clientWidth} ${canvas.clientHeight}`);
-      pathRefs.current = {};
+      const base = document.createElementNS("http://www.w3.org/2000/svg", "path");
+      base.setAttribute("d", d);
+      base.setAttribute("fill", "none");
+      base.setAttribute("stroke", "#221B3A");
+      base.setAttribute("stroke-width", "1.5");
+      svg.appendChild(base);
 
-      const defs = document.createElementNS("http://www.w3.org/2000/svg", "defs");
-      const gradient = document.createElementNS("http://www.w3.org/2000/svg", "linearGradient");
-      gradient.setAttribute("id", gradientId);
-      gradient.setAttribute("gradientUnits", "userSpaceOnUse");
+      const animated = document.createElementNS("http://www.w3.org/2000/svg", "path");
+      animated.setAttribute("d", d);
+      animated.setAttribute("fill", "none");
+      animated.setAttribute("stroke", `url(#${gradientId})`);
+      animated.setAttribute("stroke-width", "1.5");
+      animated.setAttribute("opacity", "0");
 
-      const start = document.createElementNS("http://www.w3.org/2000/svg", "stop");
-      start.setAttribute("offset", "0%");
-      start.setAttribute("stop-color", "#00e5ff");
+      const length = typeof animated.getTotalLength === "function"
+        ? animated.getTotalLength()
+        : 200;
+      animated.style.strokeDasharray = `${length}`;
+      animated.style.strokeDashoffset = `${length}`;
 
-      const end = document.createElementNS("http://www.w3.org/2000/svg", "stop");
-      end.setAttribute("offset", "100%");
-      end.setAttribute("stop-color", "#7b61ff");
+      svg.appendChild(animated);
+      pathRefs.current[conn.id] = animated;
+    });
 
-      gradient.append(start, end);
-      defs.appendChild(gradient);
-      svg.appendChild(defs);
-
-      connections.forEach((connection) => {
-        const fromEl = nodeRefs.current[connection.from];
-        const toEl = nodeRefs.current[connection.to];
-
-        if (!fromEl || !toEl) {
-          return;
-        }
-
-        const fromPoint = getDotPoint(fromEl, connection.fromDot);
-        const toPoint = getDotPoint(toEl, connection.toDot);
-        const d = makePath(fromPoint.x, fromPoint.y, toPoint.x, toPoint.y);
-
-        const basePath = document.createElementNS("http://www.w3.org/2000/svg", "path");
-        basePath.setAttribute("d", d);
-        basePath.setAttribute("fill", "none");
-        basePath.setAttribute("stroke", "#1a2535");
-        basePath.setAttribute("stroke-width", "1.5");
-        svg.appendChild(basePath);
-
-        const animatedPath = document.createElementNS("http://www.w3.org/2000/svg", "path");
-        animatedPath.setAttribute("d", d);
-        animatedPath.setAttribute("fill", "none");
-        animatedPath.setAttribute("stroke", `url(#${gradientId})`);
-        animatedPath.setAttribute("stroke-width", "1.5");
-        animatedPath.setAttribute("opacity", "0");
-
-        const length =
-          typeof animatedPath.getTotalLength === "function" ? animatedPath.getTotalLength() : 200;
-
-        animatedPath.style.strokeDasharray = `${length}`;
-        animatedPath.style.strokeDashoffset = `${length}`;
-
-        svg.appendChild(animatedPath);
-        pathRefs.current[connection.id] = animatedPath;
-      });
-    };
-
-    const resetAll = () => {
-      Object.entries(nodeRefs.current).forEach(([id, node]) => {
-        if (!node) {
-          return;
-        }
-
-        node.classList.remove("active", "active2");
-
-        if (id === "n6") {
-          node.classList.remove("active2");
-        }
-      });
-
-      Object.values(dotRefs.current).forEach((dot) => {
-        dot?.classList.remove("lit", "lit2");
-      });
-
-      Object.values(pathRefs.current).forEach((path) => {
-        if (!path) {
-          return;
-        }
-
-        const length =
-          Number(path.style.strokeDasharray) ||
-          (typeof path.getTotalLength === "function" ? path.getTotalLength() : 200);
-
-        path.setAttribute("opacity", "0");
-        path.style.transition = "none";
-        path.style.strokeDashoffset = `${length}`;
-      });
-    };
-
-    const animatePath = (pathId: PathId) => {
-      const path = pathRefs.current[pathId];
-
-      if (!path) {
-        return;
-      }
-
-      path.setAttribute("opacity", "1");
-      path.style.transition = "stroke-dashoffset 0.6s ease";
-      path.style.strokeDashoffset = "0";
-    };
-
-    const showStaticState = () => {
-      resetAll();
-
-      Object.entries(nodeRefs.current).forEach(([id, node]) => {
-        if (!node) {
-          return;
-        }
-
-        node.classList.add(id === "n6" ? "active2" : "active");
-      });
-
-      Object.entries(dotRefs.current).forEach(([id, dot]) => {
-        if (!dot) {
-          return;
-        }
-
-        dot.classList.add(id === "d6l" ? "lit2" : "lit");
-      });
-
-      Object.values(pathRefs.current).forEach((path) => {
-        if (!path) {
-          return;
-        }
-
-        path.setAttribute("opacity", "1");
-        path.style.transition = "none";
-        path.style.strokeDashoffset = "0";
-      });
-    };
-
-    const runStep = () => {
-      if (step === 0) {
-        resetAll();
-      }
-
-      if (step >= sequence.length) {
-        step = 0;
-        schedule(runStep, 1500);
-        return;
-      }
-
-      const currentStep = sequence[step];
-
-      currentStep.nodes.forEach((nodeId) => {
-        nodeRefs.current[nodeId]?.classList.add(nodeId === "n6" ? "active2" : "active");
-      });
-
-      currentStep.dots.forEach(([dotId, className]) => {
-        dotRefs.current[dotId]?.classList.add(className);
-      });
-
-      currentStep.paths.forEach(animatePath);
-
-      step += 1;
-      schedule(runStep, step >= sequence.length ? 2000 : 900);
-    };
-
-    const startSequence = () => {
-      clearTimers();
-      step = 0;
-      drawPaths();
-
-      if (prefersReducedMotion) {
-        showStaticState();
-        return;
-      }
-
-      schedule(runStep, 500);
-    };
-
-    startSequence();
-
-    let resizeObserver: ResizeObserver | null = null;
-    const handleResize = () => startSequence();
-
-    if (typeof ResizeObserver !== "undefined") {
-      resizeObserver = new ResizeObserver(handleResize);
-      resizeObserver.observe(canvas);
-    } else {
-      window.addEventListener("resize", handleResize);
-    }
-
-    return () => {
-      clearTimers();
-      resizeObserver?.disconnect();
-      window.removeEventListener("resize", handleResize);
-    };
+    setPathsReady(true);
   }, [gradientId]);
 
-  const setNodeRef = (id: NodeId) => (element: HTMLDivElement | null) => {
-    nodeRefs.current[id] = element;
+  const resetAll = useCallback(() => {
+    Object.values(nodeRefs.current).forEach((node) => {
+      node?.classList.remove("active", "active2");
+    });
+    Object.values(dotRefs.current).forEach((dot) => {
+      dot?.classList.remove("lit", "lit2");
+    });
+    Object.values(pathRefs.current).forEach((path) => {
+      if (!path) return;
+      const length = Number(path.style.strokeDasharray) || 200;
+      path.setAttribute("opacity", "0");
+      path.style.transition = "none";
+      path.style.strokeDashoffset = `${length}`;
+    });
+  }, []);
+
+  const applyStep = useCallback((stepIndex: number) => {
+    if (stepIndex < 0) {
+      resetAll();
+      return;
+    }
+    // Accumulate all steps up to and including stepIndex
+    resetAll();
+    for (let i = 0; i <= stepIndex; i++) {
+      const s = sequence[i];
+      s.nodes.forEach((nodeId) => {
+        nodeRefs.current[nodeId]?.classList.add(nodeId === "n6" ? "active2" : "active");
+      });
+      s.dots.forEach(([dotId, cls]) => {
+        dotRefs.current[dotId]?.classList.add(cls);
+      });
+      s.paths.forEach((pathId) => {
+        const path = pathRefs.current[pathId];
+        if (!path) return;
+        path.setAttribute("opacity", "1");
+        path.style.transition = i === stepIndex
+          ? "stroke-dashoffset 0.55s ease"
+          : "none";
+        path.style.strokeDashoffset = "0";
+      });
+    }
+  }, [resetAll]);
+
+  // Draw paths on mount and on resize
+  useEffect(() => {
+    drawPaths();
+    let ro: ResizeObserver | null = null;
+    if (typeof ResizeObserver !== "undefined" && canvasRef.current) {
+      ro = new ResizeObserver(() => {
+        drawPaths();
+        // Re-apply current step after redraw
+        setCurrentStep((prev) => {
+          setTimeout(() => applyStep(prev), 50);
+          return prev;
+        });
+      });
+      ro.observe(canvasRef.current);
+    }
+    return () => ro?.disconnect();
+  }, [drawPaths, applyStep]);
+
+  // Auto-play: advance every 1.4s, pause 2s on last step then loop
+  useEffect(() => {
+    if (!pathsReady) return;
+    applyStep(currentStep);
+
+    const delay = currentStep >= sequence.length - 1 ? 2200 : 1400;
+    autoRef.current = setTimeout(() => {
+      setCurrentStep((s) =>
+        s >= sequence.length - 1 ? -1 : s + 1
+      );
+    }, delay);
+
+    return () => {
+      if (autoRef.current) clearTimeout(autoRef.current);
+    };
+  }, [currentStep, pathsReady, applyStep]);
+
+  const setNodeRef = (id: NodeId) => (el: HTMLDivElement | null) => {
+    nodeRefs.current[id] = el;
+  };
+  const setDotRef = (id: DotId) => (el: HTMLDivElement | null) => {
+    dotRefs.current[id] = el;
   };
 
-  const setDotRef = (id: DotId) => (element: HTMLDivElement | null) => {
-    dotRefs.current[id] = element;
-  };
+  const stepLabel = currentStep >= 0 ? sequence[currentStep].label : "";
 
   return (
     <section
@@ -385,17 +326,15 @@ export default function FlowCanvas() {
     >
       <div className="section-label">{"// How it works"}</div>
       <h2 className="section-title">
-        Automation that
-        <br />
-        actually works
+        Automation that<br />actually works
       </h2>
       <p className="section-sub">
-        Every campaign I build runs on connected workflows. Here&apos;s what a real lead
-        generation automation looks like under the hood.
+        A real lead generation workflow, the same kind I build for every client.
       </p>
 
+      {/* Desktop canvas */}
       <div ref={canvasRef} className="flow-canvas flow-canvas-desktop">
-        <div className="canvas-label">live workflow preview</div>
+        <div className="canvas-label">interactive workflow preview</div>
         <svg ref={svgRef} className="flow-svg" aria-hidden="true" />
 
         {flowNodes.map((node) => (
@@ -406,12 +345,9 @@ export default function FlowCanvas() {
             className="node"
             style={node.style}
           >
-            <div className="node-icon" aria-hidden="true">
-              {node.icon}
-            </div>
+            <div className="node-icon" aria-hidden="true">{node.icon}</div>
             <div className="node-title">{node.title}</div>
             <div className="node-sub">{node.subtitle}</div>
-
             {node.dots.map((dot) => (
               <div
                 key={dot.id}
@@ -424,6 +360,24 @@ export default function FlowCanvas() {
         ))}
       </div>
 
+      {/* Step description */}
+      <p
+        style={{
+          textAlign: "center",
+          fontFamily: "var(--font-mono)",
+          fontSize: "0.72rem",
+          letterSpacing: "0.14em",
+          color: "var(--muted)",
+          marginTop: "0.85rem",
+          minHeight: "1.2em",
+          transition: "opacity 0.3s ease",
+        }}
+        aria-live="polite"
+      >
+        {stepLabel}
+      </p>
+
+      {/* Mobile stack */}
       <div className="flow-stack-mobile" aria-label="Workflow steps">
         {flowNodes.map((node, index) => (
           <div key={node.id} className="flow-stack-step">

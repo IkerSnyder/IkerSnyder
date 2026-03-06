@@ -1,30 +1,37 @@
 const aboutFacts = [
-  { label: "Base", value: "Spain + Southeast Asia" },
-  { label: "Work style", value: "Remote, async, timezone-flexible" },
-  { label: "Focus", value: "Outbound systems that keep running" },
+  { label: "Availability", value: "Remote · Europe and SE Asia time zones" },
+  { label: "Tools", value: "LinkedIn · Dripify · n8n · HubSpot" },
+  { label: "Approach", value: "I implement in your environment and document every workflow. You can take it over later." },
 ];
 
 export default function About() {
   return (
     <section id="about" className="about-strip" aria-label="About section">
       <div className="about-copy">
-        <div className="section-label">{"// Working style"}</div>
+        <div className="section-label">{"// Who builds this"}</div>
         <div className="about-name">
-          Based
+          I&apos;m Iker.
           <br />
-          anywhere.
+          <span>I build outbound systems</span>
           <br />
-          <span>Built for results.</span>
+          that keep running.
         </div>
 
         <p className="about-text">
-          I&apos;m Iker — a business development specialist and automation builder
-          currently based between Spain and Southeast Asia. I&apos;ve run LinkedIn
-          outreach campaigns for EHS and SaaS companies, built n8n automation
-          workflows from scratch, and helped teams generate consistent leads without
-          adding headcount. I work remotely, I&apos;m available across time zones,
-          and I only take on work I can genuinely deliver.
+          I&apos;ve built LinkedIn outreach and automation systems for B2B teams
+          that needed a repeatable pipeline without more operational drag. That
+          means ICP targeting, sequence setup, enrichment workflows, reply
+          qualification, and clean CRM handoffs. All connected and running
+          without you managing it day-to-day.
         </p>
+
+        <p className="about-text" style={{ marginTop: "0.75rem" }}>
+          Small client list by design. I only take on work I can genuinely deliver.
+        </p>
+
+        <div className="about-capacity" aria-label="Current availability">
+          Currently onboarding 1 new client this quarter
+        </div>
       </div>
 
       <div className="about-facts" aria-label="About details">
