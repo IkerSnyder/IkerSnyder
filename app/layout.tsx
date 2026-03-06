@@ -1,4 +1,5 @@
 import type { Metadata, Viewport } from "next";
+import { GoogleAnalytics } from "@next/third-parties/google";
 import { Analytics } from "@vercel/analytics/react";
 import type { ReactNode } from "react";
 import "./globals.css";
@@ -45,6 +46,8 @@ export const viewport: Viewport = {
   colorScheme: "dark",
 };
 
+const gaMeasurementId = process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID;
+
 export default function RootLayout({ children }: Readonly<{ children: ReactNode }>) {
   return (
     <html lang="en">
@@ -53,6 +56,7 @@ export default function RootLayout({ children }: Readonly<{ children: ReactNode 
           Skip to content
         </a>
         {children}
+        {gaMeasurementId ? <GoogleAnalytics gaId={gaMeasurementId} /> : null}
         <Analytics />
       </body>
     </html>
